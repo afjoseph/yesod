@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "humanize-duration": "^3.32.1",
+    "@types/humanize-duration": "^3.27.4",
     "peggy": "^4.2.0",
     "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/bun": "^1.1.14",
-    "@types/humanize-duration": "^3.27.4",
     "@types/node": "^22.10.2",
     "eslint": "^9.16.0",
     "jiti": "^2.6.1",
