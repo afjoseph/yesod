@@ -294,6 +294,21 @@ describe("Instigator Integration Tests", () => {
     expect(result.x).toBe("my-value");
   });
 
+  it("should handle environment variables", async () => {
+    const instigator = createYesod({ name: "test" });
+
+    instigator.register("hi", {
+      action: async (_, named) => named.val,
+    });
+
+    // Set an environment variable for testing
+    process.env.TEST_ENV_VAR = "bunnyfoofoo";
+
+    const result = await instigator.run(["x:(hi val:$TEST_ENV_VAR)"]);
+
+    expect(result.x).toBe("bunnyfoofoo");
+  });
+
   it("should throw for unknown commands", async () => {
     const instigator = createYesod({ name: "test" });
 

@@ -113,7 +113,10 @@ export function resolveCommandArgs(
       return arg;
     } else if ((arg as ReferencedVariable).type === "variable-ref") {
       const varRef = arg as ReferencedVariable;
-      const value = context[varRef.name];
+      let value =
+        varRef.name in context
+          ? context[varRef.name]
+          : process.env[varRef.name];
       if (value === undefined) {
         throw new Error(`Variable '${varRef.name}' is not defined`);
       }
