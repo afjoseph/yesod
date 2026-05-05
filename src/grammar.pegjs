@@ -72,10 +72,10 @@ Program = _ statements:Statement* _ { return statements; }
 // Comment rule that matches double-slash comments until end of line
 // For example: // This is a comment
 // Double-slashes were chosen because they are the superior
-// form of commenting (C++ FTW!)
+// form of commenting (C++ FTW!). That being said, hashtags work just the same
 //
 // Comments can appear anywhere whitespace is allowed
-Comment = "//" [^\n\r]*
+Comment = ("//" / "#") [^\n\r]*
 
 // A statement is either a variable assignment or a regular command
 Statement = Assignment / ExecutableCommand

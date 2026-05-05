@@ -173,6 +173,14 @@ describe("Parser Tests", () => {
     expect(result[1]!.command.name).toBe("command2");
   });
 
+  it("should handle hashtag comments in input", () => {
+    const input = "(command1) # this is a comment\n(command2)";
+    const result = tokenize(input);
+    expect(result.length).toBe(2);
+    expect(result[0]!.command.name).toBe("command1");
+    expect(result[1]!.command.name).toBe("command2");
+  });
+
   it("should parse a command with colons in the name", () => {
     const input = "(server1:deploy aaa:bbb)";
     const expected = [
