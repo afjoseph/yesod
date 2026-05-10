@@ -37,12 +37,29 @@
 //      password:whatever
 //    )
 //
+// ## Literal Assignments
+// The right-hand side of `:` can also be a literal value (quoted string,
+// bareword, or variable reference). The runner resolves it once and stores
+// the resulting string in the global context, just like a command-result
+// assignment.
+//
+//     myawesomevar:"/Users/afjoseph/dev/own/llvm19.0.0"
+//     (foo:build llvm-path:$myawesomevar)
+//     (foo:test  llvm-path:$myawesomevar)
+//
+//     // Bareword form (no spaces, no special chars)
+//     env:production
+//
+//     // Forwarding another variable or env var
+//     home:$HOME
+//
 // ## Strings and Quoting
 // For arguments that contain spaces or special characters, enclose them in
 // double quotes ""
 //
-//     (echo "This is a sentence with spaces")
-//     (echo "This is a string with a \"quoted\" word")
+//     (echo "My name is Inigo Montoya")
+//     (echo "You killed my \"father\"")
+//     (echo "Prepare to die")
 
 {
   // Helper to build a command object from parsed parts
@@ -83,13 +100,32 @@ Statement = Assignment / ExecutableCommand
 // A command expression wrapped in parentheses, which is the core executable unit
 CommandExpression = "(" _ command:Command _ ")" { return command; }
 
-// Rule for variable assignments, e.g., myVar:(command ...)
-// Consumes trailing whitespace
-Assignment = variable:Identifier ":" _ command:CommandExpression _ {
+// Rule for variable assignments
+// RHS can be a command expression (myVar:(command ...)) or a literal value
+// (myVar:"some string", myVar:stuff, myVar:$other)
+// PEG tries CommandAssignment first; it requires `(` after `:`, so any other
+// RHS falls through to LiteralAssignment unambiguously
+Assignment = CommandAssignment / LiteralAssignment
+
+// Assignment whose RHS is a command expression
+// Example: cfg:(get-config env:prod)
+CommandAssignment = variable:Identifier ":" _ command:CommandExpression _ {
   return {
     type: 'assignment',
     variableName: variable,
     command: command
+  };
+}
+
+// Assignment whose RHS is a literal value (quoted/unquoted string or $varRef)
+// Example: hahaha:"/path/to/myhahahah"
+// Example: env:production
+// Example: home:$HOME
+LiteralAssignment = variable:Identifier ":" _ value:Value _ {
+  return {
+    type: 'literal-assignment',
+    variableName: variable,
+    value: value
   };
 }
 

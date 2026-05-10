@@ -1,5 +1,5 @@
 import * as log from "./log";
-import { resolveCommandArgs } from "./parser";
+import { resolveCommandArgs, resolveArgumentValue } from "./parser";
 import type { Statement } from "./parser";
 import { withDir, formatDuration } from "./utils";
 import * as types from "./types";
@@ -36,6 +36,12 @@ export function validateStatements(
   const errors: string[] = [];
 
   for (const stmt of statements) {
+    // Literal assignments have no command to validate
+    // Value resolution is deferred to executeStatements
+    if (stmt.type === "literal-assignment") {
+      continue;
+    }
+
     const command = commandMap[stmt.command.name];
 
     // Check if command exists
@@ -76,6 +82,19 @@ export async function executeStatements(
   const startTime = performance.now();
 
   for (const stmt of statements) {
+    // Literal assignment: resolve the RHS value and store in globalContext
+    if (stmt.type === "literal-assignment") {
+      const litStartTime = performance.now();
+      const value = resolveArgumentValue(globalContext, stmt.value);
+      globalContext[stmt.variableName] = value;
+      logger.info(
+        `Executing literal assignment: ${stmt.variableName} = ${JSON.stringify(value)}`,
+      );
+      executionTimes[`literal-assignment:${stmt.variableName}`] =
+        performance.now() - litStartTime;
+      continue;
+    }
+
     // Command is guaranteed to exist after validation
     const command = commandMap[stmt.command.name]!;
 

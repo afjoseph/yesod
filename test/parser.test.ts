@@ -1,5 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { tokenize, resolveCommandArgs } from "../src/parser";
+import {
+  tokenize,
+  resolveCommandArgs,
+  type ExecutableCommand,
+} from "../src/parser";
 import { createYesod } from "../src/index";
 
 describe("Parser Tests", () => {
@@ -169,16 +173,74 @@ describe("Parser Tests", () => {
     const input = "(command1) // this is a comment\n(command2)";
     const result = tokenize(input);
     expect(result.length).toBe(2);
-    expect(result[0]!.command.name).toBe("command1");
-    expect(result[1]!.command.name).toBe("command2");
+    expect((result[0] as ExecutableCommand).command.name).toBe("command1");
+    expect((result[1] as ExecutableCommand).command.name).toBe("command2");
   });
 
   it("should handle hashtag comments in input", () => {
     const input = "(command1) # this is a comment\n(command2)";
     const result = tokenize(input);
     expect(result.length).toBe(2);
-    expect(result[0]!.command.name).toBe("command1");
-    expect(result[1]!.command.name).toBe("command2");
+    expect((result[0] as ExecutableCommand).command.name).toBe("command1");
+    expect((result[1] as ExecutableCommand).command.name).toBe("command2");
+  });
+
+  it("should parse a literal assignment with a quoted string", () => {
+    const input = 'hahaha:"/path/to/narnia"';
+    const expected = [
+      {
+        type: "literal-assignment" as const,
+        variableName: "hahaha",
+        value: "/path/to/narnia",
+      },
+    ];
+    expect(tokenize(input)).toEqual(expected);
+  });
+
+  it("should parse a literal assignment with a bareword", () => {
+    const input = "env:production";
+    const expected = [
+      {
+        type: "literal-assignment" as const,
+        variableName: "env",
+        value: "production",
+      },
+    ];
+    expect(tokenize(input)).toEqual(expected);
+  });
+
+  it("should parse a literal assignment with a variable reference", () => {
+    const input = "home:$HOME";
+    const expected = [
+      {
+        type: "literal-assignment" as const,
+        variableName: "home",
+        value: { type: "variable-ref" as const, name: "HOME" },
+      },
+    ];
+    expect(tokenize(input)).toEqual(expected);
+  });
+
+  it("should parse a literal assignment followed by a command using the variable", () => {
+    const input = 'hahaha:"/path/to/narnia" (build narnia-path:$hahaha)';
+    const expected = [
+      {
+        type: "literal-assignment" as const,
+        variableName: "hahaha",
+        value: "/path/to/narnia",
+      },
+      {
+        type: "command" as const,
+        command: {
+          name: "build",
+          positionalArgs: [] as string[],
+          namedArgs: {
+            "narnia-path": { type: "variable-ref" as const, name: "hahaha" },
+          },
+        },
+      },
+    ];
+    expect(tokenize(input)).toEqual(expected);
   });
 
   it("should parse a command with colons in the name", () => {
@@ -315,6 +377,39 @@ describe("Instigator Integration Tests", () => {
     const result = await instigator.run(["x:(hi val:$TEST_ENV_VAR)"]);
 
     expect(result.x).toBe("bunnyfoofoo");
+  });
+
+  it("should propagate a literal assignment to subsequent commands", async () => {
+    const instigator = createYesod({ name: "test" });
+    let receivedNamed: Record<string, string> | null = null;
+
+    instigator.register("echo", {
+      action: async (_, named) => {
+        receivedNamed = named;
+      },
+    });
+
+    const result = await instigator.run([
+      'hahaha:"/path/to/narnia"',
+      "(echo narnia-path:$hahaha)",
+    ]);
+
+    expect(result.hahaha).toBe("/path/to/narnia");
+    expect(receivedNamed!).toEqual({ "narnia-path": "/path/to/narnia" });
+  });
+
+  it("should resolve env-var fallback through a literal assignment", async () => {
+    const instigator = createYesod({ name: "test" });
+
+    instigator.register("hi", {
+      action: async (_, named) => named.val,
+    });
+
+    process.env.ENV_FALLBACK = "fromenv";
+
+    const result = await instigator.run(["x:$ENV_FALLBACK", "(hi val:$x)"]);
+
+    expect(result.x).toBe("fromenv");
   });
 
   it("should throw for unknown commands", async () => {

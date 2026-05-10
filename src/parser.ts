@@ -11,13 +11,23 @@ export type ReferencedVariable = {
 // ArgumentValue can be a literal string or a reference to a variable
 export type ArgumentValue = string | ReferencedVariable;
 
-// A variable assignment statement
+// A variable assignment whose RHS is a command expression
 // Example: cfg:(get-config env:prod)
 // Stores the result of get-config in the variable "cfg"
 export interface VariableAssignment {
   type: "assignment";
   variableName: string;
   command: Command;
+}
+
+// A variable assignment whose RHS is a literal value (string or variable ref)
+// Example: hahaha:"/path/to/myhahaha"
+// Example: home:$HOME
+// Stores the resolved string in the variable; no command runs
+export interface LiteralAssignment {
+  type: "literal-assignment";
+  variableName: string;
+  value: ArgumentValue;
 }
 
 // A standalone command execution
@@ -33,8 +43,14 @@ export interface Command {
   namedArgs: Record<string, ArgumentValue>;
 }
 
-// A statement is either a variable assignment or a command execution
-export type Statement = VariableAssignment | ExecutableCommand;
+// A statement is one of:
+// - VariableAssignment    (var:(cmd ...))
+// - LiteralAssignment     (var:"value", var:stuff, var:$ref)
+// - ExecutableCommand     ((cmd ...))
+export type Statement =
+  | VariableAssignment
+  | LiteralAssignment
+  | ExecutableCommand;
 
 // Cached parser instance
 // Lazily initialized on first use
@@ -88,6 +104,37 @@ export function tokenize(args: string): Statement[] {
   }
 }
 
+// Resolve a single ArgumentValue against the global context
+// - String literal -> returned as-is
+// - Variable reference -> looked up in context, falling back to process.env
+//   - Throws if neither resolves
+//
+// Example:
+//   resolveArgumentValue({ cfg: "/etc/x" }, { type: "variable-ref", name: "cfg" })
+//   -> "/etc/x"
+//   resolveArgumentValue({}, "literal")
+//   -> "literal"
+//   resolveArgumentValue({}, { type: "variable-ref", name: "HOME" })
+//   -> process.env.HOME (if set), else throws
+export function resolveArgumentValue(
+  context: Record<string, any>,
+  arg: ArgumentValue,
+): string {
+  if (typeof arg === "string") {
+    return arg;
+  }
+  if ((arg as ReferencedVariable).type === "variable-ref") {
+    const varRef = arg as ReferencedVariable;
+    const value =
+      varRef.name in context ? context[varRef.name] : process.env[varRef.name];
+    if (value === undefined) {
+      throw new Error(`Variable '${varRef.name}' is not defined`);
+    }
+    return String(value);
+  }
+  throw new Error(`Unknown argument type: ${JSON.stringify(arg)}`);
+}
+
 // Resolve variable references in command arguments using the global context
 // Returns resolved arguments as plain strings
 //
@@ -102,39 +149,15 @@ export function resolveCommandArgs(
   resolvedPositionalArgs: string[];
   resolvedNamedArgs: Record<string, string>;
 } {
-  // Resolve a single argument value
-  // If it's a string, return as-is
-  // If it's a variable reference, look it up in context
-  const resolveArgument = (
-    context: Record<string, any>,
-    arg: ArgumentValue,
-  ): string => {
-    if (typeof arg === "string") {
-      return arg;
-    } else if ((arg as ReferencedVariable).type === "variable-ref") {
-      const varRef = arg as ReferencedVariable;
-      let value =
-        varRef.name in context
-          ? context[varRef.name]
-          : process.env[varRef.name];
-      if (value === undefined) {
-        throw new Error(`Variable '${varRef.name}' is not defined`);
-      }
-      return String(value);
-    } else {
-      throw new Error(`Unknown argument type: ${JSON.stringify(arg)}`);
-    }
-  };
-
   // Resolve positional arguments
   const resolvedPositionalArgs = command.positionalArgs.map((posArg) =>
-    resolveArgument(globalContext, posArg),
+    resolveArgumentValue(globalContext, posArg),
   );
 
   // Resolve named arguments
   const resolvedNamedArgs: Record<string, string> = {};
   for (const [key, namedArg] of Object.entries(command.namedArgs)) {
-    resolvedNamedArgs[key] = resolveArgument(globalContext, namedArg);
+    resolvedNamedArgs[key] = resolveArgumentValue(globalContext, namedArg);
   }
 
   return {
