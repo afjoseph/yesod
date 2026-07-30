@@ -19,6 +19,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && cp src/grammar.pegjs dist/",
+    "prepare": "npm run build",
     "check": "tsc --noEmit && eslint src test",
     "test": "node --test test/*.ts"
   },
