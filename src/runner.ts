@@ -1,8 +1,9 @@
-import * as log from "./log";
-import { resolveCommandArgs, resolveArgumentValue } from "./parser";
-import type { Statement } from "./parser";
-import { withDir, formatDuration } from "./utils";
-import * as types from "./types";
+import * as log from "./log.ts";
+import { resolveCommandArgs, resolveArgumentValue } from "./parser.ts";
+import type { Statement } from "./parser.ts";
+import humanizeDuration from "humanize-duration";
+import * as types from "./types.ts";
+import * as zx from "zx";
 
 // Options for executing statements
 export interface ExecutionOptions {
@@ -126,7 +127,10 @@ export async function executeStatements(
 
     // Run from working directory if specified
     if (workingDir) {
-      await withDir(workingDir, executeCommand);
+      await zx.within(async () => {
+        zx.cd(workingDir);
+        await executeCommand();
+      });
     } else {
       await executeCommand();
     }
@@ -151,11 +155,11 @@ export function logExecutionSummary(
   // Build humanized execution times
   const humanizedTimes: Record<string, string> = {};
   for (const [cmd, time] of Object.entries(result.executionTimes)) {
-    humanizedTimes[cmd] = formatDuration(time);
+    humanizedTimes[cmd] = humanizeDuration(time);
   }
 
   logger.info(
     `Command execution times: ${JSON.stringify(humanizedTimes, null, 2)}`,
   );
-  logger.info(`Total execution time: ${formatDuration(result.totalTime)}`);
+  logger.info(`Total execution time: ${humanizeDuration(result.totalTime)}`);
 }

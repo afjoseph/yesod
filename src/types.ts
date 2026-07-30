@@ -1,4 +1,4 @@
-import * as log from "./log";
+import * as log from "./log.ts";
 
 // Command definition interface for registering commands with yesod
 // Each command has an action function and optional metadata

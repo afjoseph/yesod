@@ -1,10 +1,11 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it } from "node:test";
+import { expect } from "expect";
 import {
   tokenize,
   resolveCommandArgs,
   type ExecutableCommand,
-} from "../src/parser";
-import { createYesod } from "../src/index";
+} from "../src/parser.ts";
+import { createYesod } from "../src/index.ts";
 
 describe("Parser Tests", () => {
   it("should parse a simple command in parentheses", () => {
@@ -415,7 +416,7 @@ describe("Instigator Integration Tests", () => {
   it("should throw for unknown commands", async () => {
     const instigator = createYesod({ name: "test" });
 
-    expect(instigator.run(["(unknown-command)"])).rejects.toThrow(
+    await expect(instigator.run(["(unknown-command)"])).rejects.toThrow(
       "Unknown command",
     );
   });
@@ -428,7 +429,7 @@ describe("Instigator Integration Tests", () => {
       returns: "string",
     });
 
-    expect(instigator.run(["(get-config)"])).rejects.toThrow(
+    await expect(instigator.run(["(get-config)"])).rejects.toThrow(
       "must be assigned to a variable",
     );
   });

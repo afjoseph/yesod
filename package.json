@@ -1,32 +1,40 @@
 {
   "name": "yesod",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Lispy Command Runner",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./utils": "./src/utils/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
   },
   "scripts": {
-    "test": "bun test",
-    "check": "tsc --noEmit && eslint src test"
+    "build": "tsc -p tsconfig.build.json && cp src/grammar.pegjs dist/",
+    "check": "tsc --noEmit && eslint src test",
+    "test": "node --test test/*.ts"
   },
   "dependencies": {
-    "humanize-duration": "^3.32.1",
     "@types/humanize-duration": "^3.27.4",
+    "humanize-duration": "^3.32.1",
     "peggy": "^4.2.0",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "zx": "8.8.5"
   },
   "devDependencies": {
-    "@types/bun": "^1.1.14",
     "@types/node": "^22.10.2",
-    "eslint": "^9.16.0",
+    "eslint": "^10.8.0",
+    "expect": "30.4.1",
     "jiti": "^2.6.1",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.0"
-  },
-  "peerDependencies": {
-    "bun": ">=1.0.0"
   }
 }

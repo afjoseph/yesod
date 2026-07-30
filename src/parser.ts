@@ -1,4 +1,4 @@
-import * as peggy from "peggy";
+import peggy from "peggy";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -57,8 +57,7 @@ export type Statement =
 let parser: peggy.Parser | null = null;
 
 // Path to the bundled grammar file
-// Uses import.meta.path to locate the grammar relative to this module
-const grammarPath = path.join(path.dirname(import.meta.path), "grammar.pegjs");
+const grammarPath = path.join(import.meta.dirname, "grammar.pegjs");
 
 // Initialize the parser with the bundled grammar
 // This is called automatically on first tokenize() call

@@ -4,13 +4,13 @@ Lispy Command Runner
 
 ## Install
 
-```bash
-bun add yesod
+```
+npm add yesod
 ```
 
 ## Usage
 
-```typescript
+```
 import { createYesod } from "yesod"
 
 const ins = createYesod({ name: "myapp" })
@@ -38,7 +38,7 @@ await ins.run(process.argv.slice(2))
 
 ## DSL Syntax
 
-```bash
+```
 # Simple command with named arg
 (greet name:world)
 
@@ -57,9 +57,12 @@ _:(get-env)
 
 ## Development
 
-```bash
-bun test              # Run tests
-bun run check         # Type check + lint
+```
+# Check syntax
+npm run check
+
+# Run tests
+npm run test
 ```
 
 ## Etymology

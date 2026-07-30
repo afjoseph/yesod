@@ -1,7 +1,7 @@
-import * as log from "./log";
-import * as types from "./types";
-import * as parser from "./parser";
-import * as runner from "./runner";
+import * as log from "./log.ts";
+import * as types from "./types.ts";
+import * as parser from "./parser.ts";
+import * as runner from "./runner.ts";
 
 export function createYesod(
   options: types.YesodOptions,
