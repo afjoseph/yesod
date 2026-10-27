@@ -36,6 +36,12 @@ ins.register("get-env", {
 await ins.run(process.argv.slice(2))
 ```
 
+## Testing
+
+```
+npm test
+```
+
 ## DSL Syntax
 
 ```

@@ -3,7 +3,6 @@ import { resolveCommandArgs, resolveArgumentValue } from "./parser.ts";
 import type { Statement } from "./parser.ts";
 import humanizeDuration from "humanize-duration";
 import * as types from "./types.ts";
-import * as zx from "zx";
 
 // Options for executing statements
 export interface ExecutionOptions {
