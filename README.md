@@ -5,8 +5,11 @@ Lispy Command Runner
 ## Install
 
 ```
-npm add yesod
+yarn add yesod@github:afjoseph/yesod
 ```
+
+Be mindful that Yesod ships the typescript sources, so make sure to run your
+app through [tsx](https://github.com/privatenumber/tsx)
 
 ## Usage
 
@@ -39,7 +42,7 @@ await ins.run(process.argv.slice(2))
 ## Testing
 
 ```
-npm test
+yarn test
 ```
 
 ## DSL Syntax
@@ -65,10 +68,10 @@ _:(get-env)
 
 ```
 # Check syntax
-npm run check
+yarn run check
 
 # Run tests
-npm run test
+yarn test
 ```
 
 ## Etymology
