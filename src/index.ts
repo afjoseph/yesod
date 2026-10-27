@@ -3,9 +3,7 @@ import * as types from "./types.ts";
 import * as parser from "./parser.ts";
 import * as runner from "./runner.ts";
 
-export function createYesod(
-  options: types.YesodOptions,
-): types.Yesod {
+export function createYesod(options: types.YesodOptions): types.Yesod {
   let logger: log.Logger;
   if (options.logger) {
     logger = options.logger;
@@ -84,7 +82,6 @@ export function createYesod(
     // Execute statements
     const result = await runner.executeStatements(statements, commandMap, {
       logger,
-      workingDir: process.cwd(),
     });
 
     // Log execution summary

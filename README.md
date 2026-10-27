@@ -66,6 +66,7 @@ npm run test
 ```
 
 ## Etymology
+
 - Yesod is Hebrew word for "Foundation"
 - It is the 9th Sephira (read: channel) in which the divine energy passes before manifesting in the physical world: Makuth, the 10th Sephira
 - It essentially receives abstract intention from above and transmits it downward into concrete form

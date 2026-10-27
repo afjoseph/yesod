@@ -9,9 +9,6 @@ import * as zx from "zx";
 export interface ExecutionOptions {
   // Logger for execution output
   logger: log.Logger;
-  // Working directory to execute commands from
-  // If not specified, uses current working directory
-  workingDir?: string;
 }
 
 // Result of executing statements
@@ -77,7 +74,7 @@ export async function executeStatements(
   commandMap: Record<string, types.CommandDefinition>,
   options: ExecutionOptions,
 ): Promise<ExecutionResult> {
-  const { logger, workingDir } = options;
+  const { logger } = options;
   const globalContext: Record<string, any> = {};
   const executionTimes: Record<string, number> = {};
   const startTime = performance.now();
@@ -108,7 +105,7 @@ export async function executeStatements(
     // Track execution time for this command
     const cmdStartTime = performance.now();
 
-    // Execute command, optionally from a specific working directory
+    // Execute commands
     const executeCommand = async () => {
       if (stmt.type === "assignment") {
         logger.info(
@@ -125,15 +122,7 @@ export async function executeStatements(
       }
     };
 
-    // Run from working directory if specified
-    if (workingDir) {
-      await zx.within(async () => {
-        zx.cd(workingDir);
-        await executeCommand();
-      });
-    } else {
-      await executeCommand();
-    }
+    await executeCommand();
 
     executionTimes[stmt.command.name] = performance.now() - cmdStartTime;
   }
