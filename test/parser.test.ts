@@ -5,16 +5,17 @@ import {
   resolveCommandArgs,
   type ExecutableCommand,
 } from "../src/parser.ts";
-import { createYesod } from "../src/index.ts";
+import { validateStatements, executeStatements } from "../src/runner.ts";
+import { createDefaultLogger } from "../src/log.ts";
 
 describe("Parser Tests", () => {
   it("should parse a simple command in parentheses", () => {
-    const input = "(my-command)";
+    const input = "(do:me)";
     const expected = [
       {
         type: "command" as const,
         command: {
-          name: "my-command",
+          name: "do:me",
           positionalArgs: [] as string[],
           namedArgs: {},
         },
@@ -24,13 +25,13 @@ describe("Parser Tests", () => {
   });
 
   it("should parse a command with positional arguments", () => {
-    const input = '(copy "source file.txt" /dest/path)';
+    const input = '(db:copy "aaa.txt" /aaa/bbb)';
     const expected = [
       {
         type: "command" as const,
         command: {
-          name: "copy",
-          positionalArgs: ["source file.txt", "/dest/path"],
+          name: "db:copy",
+          positionalArgs: ["aaa.txt", "/aaa/bbb"],
           namedArgs: {},
         },
       },
@@ -39,7 +40,7 @@ describe("Parser Tests", () => {
   });
 
   it("should parse a command with named arguments", () => {
-    const input = '(deploy service:api version:"1.2.3")';
+    const input = '(deploy service:hahaha version:"1.2.3")';
     const expected = [
       {
         type: "command" as const,
@@ -47,7 +48,7 @@ describe("Parser Tests", () => {
           name: "deploy",
           positionalArgs: [] as string[],
           namedArgs: {
-            service: "api",
+            service: "hahaha",
             version: "1.2.3",
           },
         },
@@ -57,16 +58,16 @@ describe("Parser Tests", () => {
   });
 
   it("should parse a command with mixed positional and named arguments", () => {
-    const input = '(build "app/component" env:production optimize:true)';
+    const input = '(build "app/sss" env:production aaa:bbb)';
     const expected = [
       {
         type: "command" as const,
         command: {
           name: "build",
-          positionalArgs: ["app/component"],
+          positionalArgs: ["app/sss"],
           namedArgs: {
             env: "production",
-            optimize: "true",
+            aaa: "bbb",
           },
         },
       },
@@ -75,7 +76,7 @@ describe("Parser Tests", () => {
   });
 
   it("should parse a command with a variable reference", () => {
-    const input = "(deploy config:$deployConfig)";
+    const input = "(deploy config:$sss)";
     const expected = [
       {
         type: "command" as const,
@@ -83,7 +84,7 @@ describe("Parser Tests", () => {
           name: "deploy",
           positionalArgs: [] as string[],
           namedArgs: {
-            config: { type: "variable-ref" as const, name: "deployConfig" },
+            config: { type: "variable-ref" as const, name: "sss" },
           },
         },
       },
@@ -92,13 +93,13 @@ describe("Parser Tests", () => {
   });
 
   it("should parse a variable assignment statement", () => {
-    const input = "myVar:(get-config env:prod)";
+    const input = "myVar:(getconfig env:prod)";
     const expected = [
       {
         type: "assignment" as const,
         variableName: "myVar",
         command: {
-          name: "get-config",
+          name: "getconfig",
           positionalArgs: [] as string[],
           namedArgs: {
             env: "prod",
@@ -110,12 +111,12 @@ describe("Parser Tests", () => {
   });
 
   it("should parse multiple statements", () => {
-    const input = "(command1) myVar:(command2 val) (command3 key:value)";
+    const input = "(cmd1) myVar:(cmd2 val) (cmd33 key:value)";
     const expected = [
       {
         type: "command" as const,
         command: {
-          name: "command1",
+          name: "cmd1",
           positionalArgs: [] as string[],
           namedArgs: {} as Record<string, string>,
         },
@@ -124,7 +125,7 @@ describe("Parser Tests", () => {
         type: "assignment" as const,
         variableName: "myVar",
         command: {
-          name: "command2",
+          name: "cmd2",
           positionalArgs: ["val"],
           namedArgs: {} as Record<string, string>,
         },
@@ -132,7 +133,7 @@ describe("Parser Tests", () => {
       {
         type: "command" as const,
         command: {
-          name: "command3",
+          name: "cmd33",
           positionalArgs: [] as string[],
           namedArgs: { key: "value" },
         },
@@ -142,23 +143,23 @@ describe("Parser Tests", () => {
   });
 
   it("should throw an error for a command not in parentheses", () => {
-    const input = "my-command";
+    const input = "ssss";
     expect(() => tokenize(input)).toThrow();
   });
 
   it("should throw an error for unbalanced parentheses", () => {
-    const input = "(my-command";
+    const input = "(ssss";
     expect(() => tokenize(input)).toThrow();
   });
 
   it("should handle escaped quotes in strings correctly", () => {
-    const input = '(echo "this is a \\"quoted\\" string")';
+    const input = '(echo "this is a \\"fuckedup\\" string")';
     const expected = [
       {
         type: "command" as const,
         command: {
           name: "echo",
-          positionalArgs: ['this is a "quoted" string'],
+          positionalArgs: ['this is a "fuckedup" string'],
           namedArgs: {},
         },
       },
@@ -171,19 +172,19 @@ describe("Parser Tests", () => {
   });
 
   it("should handle comments in input", () => {
-    const input = "(command1) // this is a comment\n(command2)";
+    const input = "(cmd1) // this is a commentbuaahaha\n(cmd2)";
     const result = tokenize(input);
     expect(result.length).toBe(2);
-    expect((result[0] as ExecutableCommand).command.name).toBe("command1");
-    expect((result[1] as ExecutableCommand).command.name).toBe("command2");
+    expect((result[0] as ExecutableCommand).command.name).toBe("cmd1");
+    expect((result[1] as ExecutableCommand).command.name).toBe("cmd2");
   });
 
   it("should handle hashtag comments in input", () => {
-    const input = "(command1) # this is a comment\n(command2)";
+    const input = "(cmd1) # this is a commentallahakbar\n(cmd2)";
     const result = tokenize(input);
     expect(result.length).toBe(2);
-    expect((result[0] as ExecutableCommand).command.name).toBe("command1");
-    expect((result[1] as ExecutableCommand).command.name).toBe("command2");
+    expect((result[0] as ExecutableCommand).command.name).toBe("cmd1");
+    expect((result[1] as ExecutableCommand).command.name).toBe("cmd2");
   });
 
   it("should parse a literal assignment with a quoted string", () => {
@@ -266,7 +267,7 @@ describe("Argument Resolution Tests", () => {
   it("should resolve string arguments as-is", () => {
     const context = {};
     const command = {
-      name: "test",
+      name: "habibi",
       positionalArgs: ["hello", "world"] as string[],
       namedArgs: { key: "value" } as Record<string, string>,
     };
@@ -278,7 +279,7 @@ describe("Argument Resolution Tests", () => {
   it("should resolve variable references from context", () => {
     const context = { myVar: "/path/to/config" };
     const command = {
-      name: "test",
+      name: "habibi",
       positionalArgs: [] as string[],
       namedArgs: { config: { type: "variable-ref" as const, name: "myVar" } },
     };
@@ -289,7 +290,7 @@ describe("Argument Resolution Tests", () => {
   it("should throw for undefined variable references", () => {
     const context = {};
     const command = {
-      name: "test",
+      name: "habibi",
       positionalArgs: [] as string[],
       namedArgs: { config: { type: "variable-ref" as const, name: "missing" } },
     };
@@ -299,46 +300,32 @@ describe("Argument Resolution Tests", () => {
   });
 });
 
-describe("Instigator Integration Tests", () => {
-  it("should create an instigator and register commands", () => {
-    const instigator = createYesod({ name: "test" });
-
-    instigator.register("hello", {
-      action: async () => "world",
-      description: "Says hello",
-    });
-
-    const commands = instigator.getCommands();
-    expect(commands["hello"]).toBeDefined();
-    expect(commands["hello"]!.description).toBe("Says hello");
-  });
+describe("Runner Integration Tests", () => {
+  const logger = createDefaultLogger("habibi");
 
   it("should execute a simple command", async () => {
-    const instigator = createYesod({ name: "test" });
     let called = false;
 
-    instigator.register("ping", {
-      action: async () => {
-        called = true;
+    await executeStatements(logger, tokenize("(ping)"), {
+      ping: {
+        action: async () => {
+          called = true;
+        },
       },
     });
-
-    await instigator.run(["(ping)"]);
     expect(called).toBe(true);
   });
 
   it("should pass arguments to commands", async () => {
-    const instigator = createYesod({ name: "test" });
-    let receivedArgs: { pos: string[]; named: Record<string, string> } | null =
-      null;
+    let receivedArgs: any = null;
 
-    instigator.register("echo", {
-      action: async (pos, named) => {
-        receivedArgs = { pos, named };
+    await executeStatements(logger, tokenize("(echo hello key:value)"), {
+      echo: {
+        action: async (pos, named) => {
+          receivedArgs = { pos, named };
+        },
       },
     });
-
-    await instigator.run(["(echo hello key:value)"]);
     expect(receivedArgs!).toEqual({
       pos: ["hello"],
       named: { key: "value" },
@@ -346,91 +333,75 @@ describe("Instigator Integration Tests", () => {
   });
 
   it("should handle variable assignment and resolution", async () => {
-    const instigator = createYesod({ name: "test" });
+    const result = await executeStatements(
+      logger,
+      tokenize("x:(get-value) (use-value val:$x)"),
+      {
+        "get-value": { action: async () => "my-value", returns: "string" },
+        "use-value": {
+          action: async (_, named) => named.val,
+        },
+      },
+    );
 
-    instigator.register("get-value", {
-      action: async () => "my-value",
-      returns: "string",
-    });
-
-    instigator.register("use-value", {
-      action: async (_, named) => named.val,
-    });
-
-    const result = await instigator.run([
-      "x:(get-value)",
-      "(use-value val:$x)",
-    ]);
-
-    expect(result.x).toBe("my-value");
+    expect(result.globalContext.x).toBe("my-value");
   });
 
   it("should handle environment variables", async () => {
-    const instigator = createYesod({ name: "test" });
-
-    instigator.register("hi", {
-      action: async (_, named) => named.val,
-    });
-
     // Set an environment variable for testing
     process.env.TEST_ENV_VAR = "bunnyfoofoo";
 
-    const result = await instigator.run(["x:(hi val:$TEST_ENV_VAR)"]);
+    const result = await executeStatements(
+      logger,
+      tokenize("x:(hi val:$TEST_ENV_VAR)"),
+      { hi: { action: async (_, named) => named.val } },
+    );
 
-    expect(result.x).toBe("bunnyfoofoo");
+    expect(result.globalContext.x).toBe("bunnyfoofoo");
   });
 
   it("should propagate a literal assignment to subsequent commands", async () => {
-    const instigator = createYesod({ name: "test" });
-    let receivedNamed: Record<string, string> | null = null;
+    let receivedNamed: any = null;
 
-    instigator.register("echo", {
-      action: async (_, named) => {
-        receivedNamed = named;
+    const result = await executeStatements(
+      logger,
+      tokenize('hahaha:"/path/to/narnia" (echo narnia-path:$hahaha)'),
+      {
+        echo: {
+          action: async (_, named) => {
+            receivedNamed = named;
+          },
+        },
       },
-    });
+    );
 
-    const result = await instigator.run([
-      'hahaha:"/path/to/narnia"',
-      "(echo narnia-path:$hahaha)",
-    ]);
-
-    expect(result.hahaha).toBe("/path/to/narnia");
+    expect(result.globalContext.hahaha).toBe("/path/to/narnia");
     expect(receivedNamed!).toEqual({ "narnia-path": "/path/to/narnia" });
   });
 
   it("should resolve env-var fallback through a literal assignment", async () => {
-    const instigator = createYesod({ name: "test" });
-
-    instigator.register("hi", {
-      action: async (_, named) => named.val,
-    });
-
     process.env.ENV_FALLBACK = "fromenv";
 
-    const result = await instigator.run(["x:$ENV_FALLBACK", "(hi val:$x)"]);
-
-    expect(result.x).toBe("fromenv");
-  });
-
-  it("should throw for unknown commands", async () => {
-    const instigator = createYesod({ name: "test" });
-
-    await expect(instigator.run(["(unknown-command)"])).rejects.toThrow(
-      "Unknown command",
+    const result = await executeStatements(
+      logger,
+      tokenize("x:$ENV_FALLBACK (hi val:$x)"),
+      { hi: { action: async (_, named) => named.val } },
     );
+
+    expect(result.globalContext.x).toBe("fromenv");
   });
 
-  it("should throw for unassigned return-value commands", async () => {
-    const instigator = createYesod({ name: "test" });
+  it("should report unknown commands", () => {
+    const errors = validateStatements(tokenize("(unknown-command)"), {});
 
-    instigator.register("get-config", {
-      action: async () => "/path",
-      returns: "string",
+    expect(errors.join("\n")).toContain("Unknown command");
+  });
+
+  it("should report unassigned return-value commands", () => {
+    const errors = validateStatements(tokenize("(getconfig)"), {
+      getconfig: { action: async () => "/path", returns: "string" },
     });
 
-    await expect(instigator.run(["(get-config)"])).rejects.toThrow(
-      "must be assigned to a variable",
-    );
+    expect(errors.join("\n")).toContain("must be assigned to a variable");
   });
 });

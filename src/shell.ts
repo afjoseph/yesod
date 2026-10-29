@@ -120,3 +120,21 @@ export async function withDir<T>(
 
 // Re-export ProcessOutput and ShellError from zx
 export { ProcessOutput, ProcessOutput as ShellError } from "zx";
+
+// humanizeShellError takes a ShellError and returns a human-readable string
+export function humanizeShellError(err: zx.ProcessOutput): string {
+  // Handle shell errors in a nice and readable way
+  const parts: string[] = [
+    `Error during command execution (exit code ${err.exitCode}):`,
+  ];
+  const stderr = err.stderr.toString().trim();
+  if (stderr) {
+    parts.push(`stderr:\n${stderr}`);
+  }
+  const stdout = err.stdout.toString().trim();
+  if (stdout) {
+    parts.push(`stdout:\n${stdout}`);
+  }
+  parts.push(`stack:\n${err.stack}`);
+  return parts.join("\n\n");
+}

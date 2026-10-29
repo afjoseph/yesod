@@ -1,12 +1,13 @@
 {
   "name": "yesod",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Lispy Command Runner",
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./shell": "./src/shell.ts"
+    "./shell": "./src/shell.ts",
+    "./log": "./src/log.ts"
   },
   "files": [
     "src"
@@ -21,6 +22,7 @@
   },
   "dependencies": {
     "@types/humanize-duration": "^3.27.4",
+    "dayjs": "^1.11.23",
     "humanize-duration": "^3.32.1",
     "peggy": "^4.2.0",
     "winston": "^3.17.0",

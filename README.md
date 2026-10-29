@@ -1,82 +1,66 @@
 # Yesod
 
-Lispy Command Runner
+Lispy Command Orchestration Framework
 
 ## Install
 
-```
-yarn add yesod@github:afjoseph/yesod
-```
+    yarn add yesod@github:afjoseph/yesod
 
 Be mindful that Yesod ships the typescript sources, so make sure to run your
-app through [tsx](https://github.com/privatenumber/tsx)
+app through [tsx](https://github.com/privatenumber/tsx), or feel free to add
+something to your package.json to compile to JS
 
 ## Usage
 
-```
-import { createYesod } from "yesod"
+    import * as yesod from "yesod"
 
-const ins = createYesod({ name: "myapp" })
-
-// Register commands
-ins.register("greet", {
-  description: "Say hello",
-  argsDescription: ["name: Person to greet"],
-  action: async (positional, named) => {
-    console.log(`Hello, ${named.name}!`)
-  },
-})
-
-ins.register("get-env", {
-  description: "Get environment config",
-  returns: "Config object",
-  action: async (positional, named) => {
-    return { env: named.env || "dev" }
-  },
-})
-
-// Run from CLI args
-await ins.run(process.argv.slice(2))
-```
-
-## Testing
-
-```
-yarn test
-```
+    await yesod.main({
+        commands: {
+          greet: {
+            description: "Say hello",
+            argsDescription: ["name: Person to greet"],
+            action: async (positional, named) => {
+                console.log(`Hello, ${named.name} xD xD`)
+            },
+          },
+        },
+        // Do something before any command run
+        onInit: async () => {},
+        // Do something right after all commands run
+        onExit: (ctx: yesod.OnExitContext) => {},
+    })
 
 ## DSL Syntax
 
-```
-# Simple command with named arg
-(greet name:world)
+    // Simple command with named arg
+    (greet name:world)
 
-# Assign return value to variable
-config:(get-env env:prod)
+    // Assign return value to variable
+    config:(get-env env:prod)
 
-# Chain commands, reference variables
-config:(get-env env:prod) (deploy config:$config)
+    // Chain commands, reference variables
+    config:(get-env env:prod) (deploy config:$config)
 
-# Discard return value (for commands with `returns`)
-_:(get-env)
+    // Discard return value (for commands with `returns`)
+    _:(get-env)
 
-# Positional args
-(deploy prod verbose)
-```
+    // Positional args
+    (deploy prod verbose)
 
 ## Development
 
-```
-# Check syntax
-yarn run check
+    // Check syntax
+    yarn run check
 
-# Run tests
-yarn test
-```
+    // Run tests
+    yarn test
 
 ## Etymology
 
 - Yesod is Hebrew word for "Foundation"
-- It is the 9th Sephira (read: channel) in which the divine energy passes before manifesting in the physical world: Makuth, the 10th Sephira
-- It essentially receives abstract intention from above and transmits it downward into concrete form
-- I am also a big fan of the name and I'm very happy other [fantastic projects](https://www.yesodweb.com/) found resonance in the same idea
+- It is the 9th Sephira (read: channel) in which the divine energy passes
+  before manifesting in the physical world: Makuth, the 10th Sephira
+- It essentially receives abstract intention from above and transmits it
+  downward into concrete form
+- I am also a big fan of the name and I'm very happy other [fantastic
+  projects](https://www.yesodweb.com/) found resonance in the same idea

@@ -10,35 +10,49 @@ export interface CommandDefinition {
     positionalArgs: string[],
     namedArgs: Record<string, string>,
   ) => Promise<any>;
-  // Human-readable description shown in --help
+  // Human-readable description of the command
   description?: string;
-  // Detailed argument descriptions for help text
-  // Example: ["REQUIRED env: The environment (staging/production)", "OPTIONAL verbose: Enable verbose output"]
+  // Human-readable description of the arguments
   argsDescription?: string[];
   // If set, indicates the command returns a value and must be assigned to a variable
   // Example: returns: "Path to config file (string)"
   returns?: string;
 }
 
-// The main Yesod instance returned by createYesod
-export interface Yesod {
-  // Register a command with the yesod
-  register(name: string, definition: CommandDefinition): void;
-  // Execute commands from CLI arguments
-  // Returns the global context with any assigned variables
-  run(args: string[]): Promise<Record<string, any>>;
-  // Display help text showing all registered commands
-  showHelp(): void;
-  // Access the registered commands
-  getCommands(): Record<string, CommandDefinition>;
+// Options passed to main() to configure an instance of Yesod
+export interface InstanceOptions {
+  // Commands to register
+  commands: Record<string, CommandDefinition>;
+
+  // Optional path to the file where commands are defined, shown in the help
+  // message
+  commandsPath?: string;
+
+  // Optional custom logger instance. If not provided, a default logger is
+  // created
+  logger?: log.Logger;
+  // Optional log file prefix. If not, defaults to "YESOD"
+  logPrefix?: string;
+  // Optional absolute directory of where to store log files. Defaults to
+  // "__logs" in the current working directory
+  logsDir?: string;
+
+  // Optional callback that runs before any command is executed, when the Yesod
+  // instance is initialized
+  onInit?: () => Promise<void>;
+
+  // Optional callback that runs inside process.on("exit"), after all commands
+  // have finished executing
+  //
+  // Be mindful that we can **only** have synchronous work here, since this
+  // runs after the event loop has been drained and the process is about to
+  // exit
+  onExit?: (ctx: OnExitContext) => void;
 }
 
-// Options passed to createYesod
-export interface YesodOptions {
-  // Name used in log prefixes
-  // Example: "banana" produces logs like [banana:component]
-  name: string;
-  // Optional custom logger instance
-  // If not provided, a default winston logger is created
-  logger?: log.Logger;
+// Context passed to onExit callback
+export interface OnExitContext {
+  logsDir: string;
+  logFilePath: string;
+  exitCode: number;
 }

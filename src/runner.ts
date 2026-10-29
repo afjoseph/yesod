@@ -4,12 +4,6 @@ import type { Statement } from "./parser.ts";
 import humanizeDuration from "humanize-duration";
 import * as types from "./types.ts";
 
-// Options for executing statements
-export interface ExecutionOptions {
-  // Logger for execution output
-  logger: log.Logger;
-}
-
 // Result of executing statements
 export interface ExecutionResult {
   // The global context containing all assigned variables
@@ -69,11 +63,10 @@ export function validateStatements(
 //   cfg:(get-config env:prod)   -> executes get-config, stores result in globalContext.cfg
 //   (deploy config:$cfg)        -> resolves $cfg from context, executes deploy
 export async function executeStatements(
+  logger: log.Logger,
   statements: Statement[],
   commandMap: Record<string, types.CommandDefinition>,
-  options: ExecutionOptions,
 ): Promise<ExecutionResult> {
-  const { logger } = options;
   const globalContext: Record<string, any> = {};
   const executionTimes: Record<string, number> = {};
   const startTime = performance.now();
@@ -137,8 +130,8 @@ export async function executeStatements(
 
 // Log execution timing summary
 export function logExecutionSummary(
-  result: ExecutionResult,
   logger: log.Logger,
+  result: ExecutionResult,
 ): void {
   // Build humanized execution times
   const humanizedTimes: Record<string, string> = {};

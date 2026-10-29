@@ -15,7 +15,7 @@ export interface Logger {
 
 export interface LoggerOptions {
   // Prefix used in log messages
-  // Example: "banana" produces logs like [banana:component]
+  // E.g., "banana" produces logs like [banana:component]
   prefix: string;
   level?: "debug" | "info" | "warn" | "error";
 }
@@ -33,7 +33,13 @@ export function genericLogFunctionInfo(
   callerArgs: IArguments,
 ) {
   const stack = new Error().stack!;
-  const callerInfo = stack.split("\n")[2]!.trim();
+  // Stack frames, as called through a logger's logFunctionInfo (see the
+  // example above and wrapWinstonLogger below):
+  // - [0] "Error"
+  // - [1] genericLogFunctionInfo
+  // - [2] logFunctionInfo, the wrapper
+  // - [3] the function that called logger.logFunctionInfo(arguments)
+  const callerInfo = stack.split("\n")[3]!.trim();
   const functionName = callerInfo.split(" ")[1];
 
   // Extract filename from stack trace
