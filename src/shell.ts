@@ -92,6 +92,34 @@ export function $$(
     })(pieces, ...args);
   };
 }
+// Quiet version of $$
+export function $q(
+  pieces: TemplateStringsArray,
+  ...args: any[]
+): zx.ProcessPromise;
+export function $q(
+  opts: Partial<zx.Options>,
+): (pieces: TemplateStringsArray, ...args: any[]) => zx.ProcessPromise;
+export function $q(
+  first: TemplateStringsArray | Partial<zx.Options>,
+  ...rest: any[]
+) {
+  if ("raw" in first) {
+    return zx.$({
+      ...defaultShellOptions(),
+      quiet: true,
+      verbose: false,
+    })(first, ...rest);
+  }
+  return (pieces: TemplateStringsArray, ...args: any[]) => {
+    return zx.$({
+      ...defaultShellOptions(),
+      ...first,
+      quiet: true,
+      verbose: false,
+    })(pieces, ...args);
+  };
+}
 
 // withDir runs fn in the given directory, and return to the original directory
 // after fn is done
