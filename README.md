@@ -5,6 +5,7 @@ Lispy Command Orchestration Framework
 ## Install
 
     yarn add yesod@github:afjoseph/yesod
+    // Upgrade an existing installation with `yarn up yesod@github:afjoseph/yesod`
 
 Be mindful that Yesod ships the typescript sources, so make sure to run your
 app through [tsx](https://github.com/privatenumber/tsx), or feel free to add
@@ -40,7 +41,7 @@ script at the root of your directory and call it
     SCRIPT_DIR="$(dirname "$(grealpath "${BASH_SOURCE[0]}")")"
     # Use `yarn tsx` to run the exact tsx version we want in package.json and not
     # the installed one
-    cd "${SCRIPT_DIR}" && exec yarn tsx src/index.ts "$@"
+    cd "${SCRIPT_DIR}" && yarn tsx src/index.ts "$@"
 
 ## DSL Syntax
 
