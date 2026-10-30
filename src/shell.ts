@@ -159,10 +159,11 @@ export function humanizeShellError(err: zx.ProcessOutput): string {
   if (stderr) {
     parts.push(`stderr:\n${stderr}`);
   }
-  const stdout = err.stdout.toString().trim();
-  if (stdout) {
-    parts.push(`stdout:\n${stdout}`);
-  }
+  // Don't stream stdout: it most probably has already been displayed
+  // const stdout = err.stdout.toString().trim();
+  // if (stdout) {
+  //   parts.push(`stdout:\n${stdout}`);
+  // }
   parts.push(`stack:\n${err.stack}`);
   return parts.join("\n\n");
 }
