@@ -12,6 +12,7 @@ something to your package.json to compile to JS
 
 ## Usage
 
+    // index.ts
     import * as yesod from "yesod"
 
     await yesod.main({
@@ -29,6 +30,17 @@ something to your package.json to compile to JS
         // Do something right after all commands run
         onExit: (ctx: yesod.OnExitContext) => {},
     })
+
+Then either run it with something like `yarn tsx index.ts` or install a bash
+script at the root of your directory and call it
+
+    #!/usr/bin/env bash
+
+    # Use grealpath to resolve symlinks to give the absolute path of the script
+    SCRIPT_DIR="$(dirname "$(grealpath "${BASH_SOURCE[0]}")")"
+    # Use `yarn tsx` to run the exact tsx version we want in package.json and not
+    # the installed one
+    cd "${SCRIPT_DIR}" && exec yarn tsx src/index.ts "$@"
 
 ## DSL Syntax
 
