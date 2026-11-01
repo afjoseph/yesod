@@ -10,6 +10,10 @@ import * as path from "node:path";
 import dayjs from "dayjs";
 
 const DEFAULT_LOGS_DIR = "__logs";
+// Make an INVOCATIONID and set it for the whole process
+const INVOCATIONID = `INVO${crypto.randomBytes(4).toString("hex")}`;
+// Set it for the whole process
+process.env.INVOCATIONID = INVOCATIONID;
 
 export async function main(opts: types.InstanceOptions): Promise<void> {
   // Init logger, or take one if supplied
@@ -34,13 +38,8 @@ export async function main(opts: types.InstanceOptions): Promise<void> {
     return;
   }
 
-  // Make INVOCATIONID and set it for the whole process
-  const invocationID = makeInvocationID();
-  process.env.INVOCATIONID = invocationID;
-
   // Make log file, set it for the whole process and start teeing
   const logFilePath = await makeLogFile(
-    invocationID,
     opts.logPrefix ?? "YESOD",
     opts.logsDir,
   );
@@ -52,7 +51,6 @@ export async function main(opts: types.InstanceOptions): Promise<void> {
   installSignalHandler();
   installUncaughtExceptionHandler();
   installExitHandler({
-    invocationID,
     logsPrefix: opts.logPrefix ?? "YESOD",
     logsDir: opts.logsDir ?? path.join(process.cwd(), DEFAULT_LOGS_DIR),
     logFilePath,
@@ -61,7 +59,7 @@ export async function main(opts: types.InstanceOptions): Promise<void> {
   });
 
   // Run lifecycle
-  await printInvocationReceipt(invocationID, args, false);
+  await printInvocationReceipt(args, false);
   await opts.onInit?.();
   try {
     // Join args and tokenize
@@ -96,14 +94,13 @@ export async function main(opts: types.InstanceOptions): Promise<void> {
     process.exit(1);
   }
 
-  await printInvocationReceipt(invocationID, args, true);
+  await printInvocationReceipt(args, true);
 }
 
 // installExitHandler sets up a process.on("exit") handler that will call the
 // provided onExit callback, stop teeing to log file, and generally
 // finalize the process
 async function installExitHandler(opts: {
-  invocationID: string;
   logsPrefix: string;
   logsDir: string;
   logFilePath: string;
@@ -126,7 +123,7 @@ async function installExitHandler(opts: {
       );
     }
 
-    console.log(`[${opts.logsPrefix}] InvocationID: ${opts.invocationID}`);
+    console.log(`[${opts.logsPrefix}] InvocationID: ${INVOCATIONID}`);
     console.log(`[${opts.logsPrefix}] Log file: ${opts.logFilePath}`);
   });
 }
@@ -167,7 +164,6 @@ async function installSignalHandler(): Promise<void> {
 // makeLogFile creates a log file in logsDir, returning the path to the log
 // file
 async function makeLogFile(
-  invocationID: string,
   logPrefix: string,
   logsDir?: string,
 ): Promise<string> {
@@ -178,7 +174,7 @@ async function makeLogFile(
   });
 
   // Create log file name with timestamp, username, and invocation ID
-  const logFileName = `${logPrefix}_${dayjs().format("YYMMDDHHmmss")}_${os.userInfo().username}_${invocationID}.log`;
+  const logFileName = `${logPrefix}_${dayjs().format("YYMMDDHHmmss")}_${os.userInfo().username}_${INVOCATIONID}.log`;
 
   return path.join(logsDir, logFileName);
 }
@@ -228,14 +224,10 @@ function startTee(logFilePath: string): () => void {
 
 // printInvocationReceipt prints a receipt of the invocation to stdout and
 // copies it to the clipboard in an acceptable format
-async function printInvocationReceipt(
-  invocationID: string,
-  args: string[],
-  showSuccess: boolean,
-) {
+async function printInvocationReceipt(args: string[], showSuccess: boolean) {
   const quiet$$ = sh.$$({ quiet: true });
   const repoInfo = `${(await quiet$$`basename $(git rev-parse --show-toplevel)`).stdout.toString().trim()}:${(await quiet$$`git rev-parse --abbrev-ref HEAD`).stdout.toString().trim()}:${(await quiet$$`git rev-parse --short HEAD`).stdout.toString().trim()}`;
-  const invocationBlock = `// ${invocationID}
+  const invocationBlock = `// ${INVOCATIONID}
 // ${repoInfo}${showSuccess ? "\n// RAN SUCCESSFULLY" : ""}
 ./x ${quoteArgs(args)}`;
   console.log(`\n${invocationBlock}\n`);
@@ -248,8 +240,8 @@ function quoteArgs(args: string[]): string {
   return args.map((a) => `'${a.replaceAll("'", `'\\''`)}'`).join(" ");
 }
 
-function makeInvocationID(): string {
-  return `INVO${crypto.randomBytes(4).toString("hex")}`;
+export function getInvocationID(): string {
+  return INVOCATIONID;
 }
 
 // Reexport OnExitContext for convenience of callers
